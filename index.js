@@ -19,12 +19,16 @@ const http = require('http').createServer(app)
 const mongoose = require('mongoose')
 const socketio = require('socket.io')
 const io = socketio(http)
+// const path = require('path');
 const mongoDB =
   'mongodb+srv://bhupesh:bhupesh@cluster0.axtn8.mongodb.net/myChatDb?retryWrites=true&w=majority'
 // const mongoDB = 'mongodb://localhost:27017/boilerplate'
 console.log("IT DOES WORK",process.env.NODE_ENV)
 if(process.env.NODE_ENV === 'production'){
   app.use(express.static('client/build'))
+  // app.get('*',(req,res)=>{
+
+  // })
 }
 mongoose
   .connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
