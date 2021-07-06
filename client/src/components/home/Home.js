@@ -5,7 +5,7 @@ import RoomList from './RoomList'
 import io from 'socket.io-client'
 let socket
 const Home = () => {
-  const ENDPT = 'localhost:5001'
+  const ENDPT = '/'
 
   const { user, setUser } = useContext(UserContext)
   const [room, setRoom] = useState('')
