@@ -9,7 +9,7 @@ const Navbar = () => {
 
     const logout = async () => {
         try {
-            const res = await fetch('http://localhost:5001/logout', {
+            const res = await fetch('https://cug-chat-app.herokuapp.com/logout', {
                 credentials: 'include',
             });
             const data = res.json();
