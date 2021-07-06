@@ -3,6 +3,7 @@ const app = express()
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const dotenv = require('dotenv')
+const path = require('path')
 dotenv.config()
 var corsOptions = {
   origin: '*',
@@ -23,13 +24,7 @@ const io = socketio(http)
 const mongoDB =
   'mongodb+srv://bhupesh:bhupesh@cluster0.axtn8.mongodb.net/myChatDb?retryWrites=true&w=majority'
 // const mongoDB = 'mongodb://localhost:27017/boilerplate'
-console.log("IT DOES WORK",process.env.NODE_ENV)
-if(process.env.NODE_ENV === 'production'){
-  app.use(express.static('client/build'))
-  // app.get('*',(req,res)=>{
 
-  // })
-}
 mongoose
   .connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('connected'))
@@ -49,6 +44,14 @@ app.get('/get-cookies', (req, res) => {
   console.log(cookies)
   res.json(cookies)
 })
+
+console.log("IT DOES WORK",process.env.NODE_ENV)
+if(process.env.NODE_ENV === 'production'){
+  app.use(express.static('client/build'))
+  app.get('*',(req,res)=>{
+    res.sendFile(path.resolve(__dirname,'client','build','index.html'))
+  })
+}
 
 io.on('connection', (socket) => {
   console.log(socket.id)
