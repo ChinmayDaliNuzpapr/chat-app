@@ -31,7 +31,7 @@ mongoose
   .catch((err) => console.log(err))
 const { addUser, getUser, removeUser } = require('./helper')
 const Message = require('./models/Message')
-const PORT = process.env.PORT || 5001
+const PORT = '/'//process.env.PORT || 5001
 const Room = require('./models/Room')
 
 app.get('/set-cookies', (req, res) => {
