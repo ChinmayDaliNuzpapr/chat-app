@@ -36,6 +36,8 @@ const { addUser, getUser, removeUser } = require("./helper");
 const Message = require("./models/Message");
 const PORT = process.env.PORT || 5001;
 const Room = require("./models/Room");
+const KeyPairVal = require("./models/KeyPair");
+// Room.create({name:"135weqwerwqre",user_1:"",user_2:""})
 
 app.get("/set-cookies", (req, res) => {
   res.cookie("username", "Tony");
@@ -56,28 +58,44 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-io.on("connection", (socket) => {
-  console.log(socket.id);
-  Room.find().then((result) => {
-    socket.emit("output-rooms", result);
-  });
-  /* The creation of room will take place based on an event 
-      - The room-name will be <user-name-1>_<user-name-2>; since username are alphanumeric
-      - so while searching room
-          1. <loggedin-user-name>_<searched-user-name>
-          2. <searched-user-name>_<loggedin-user-name>
-      🚩 How should I make sure I have only one room-id in this.
-            Generate alphanumeric
-            room --> user-1||user-2
+function randomString(
+  length = 12,
+  chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+) {
+  var result = "";
+  for (var i = length; i > 0; --i)
+    result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
 
-      56ch_56aj
-  */
-  socket.on("create-room", ({ user_1, user_2 }) => {
-    /*  */
-    // const room = new Room({ name });
-    // room.save().then((result) => {
-    //   io.emit("room-created", result);
+const checkIfRoomExists = async ({ user_1, user_2 }) => {
+  let room_val = await Room.findOne({ user_1: user_1, user_2: user_2 });
+  // console.log("THE ROOM VAL", room_val);
+  if (await Room.findOne({ user_1: user_1, user_2: user_2 })) {
+    console.log("CHECK TO SEE IF THE ROOM ALREADY EXISTS", room_val);
+    return room_val._id;
+  } else if (await Room.findOne({ user_1: user_2, user_2: user_1 })) {
+    console.log("The room has been created by the other user");
+    let room_val = await Room.findOne({ user_1: user_2, user_2: user_1 });
+    return room_val._id;
+  } else {
+    return null;
+  }
+};
+
+io.on("connection", (socket) => {
+  console.log("THE SOCKET ID ", socket.id);
+  socket.on("create-room", (val) => {
+    console.log("THE CREATE ROOM EMITTER", val);
+    // const server_save_keyPair = new KeyPairVal({
+    //   key_val: {
+    //     publicKeyJwk: val.publicKeyJwk,
+    //     privateKeyJwk: val.privateKeyJwk,
+    //   },
     // });
+    // server_save_keyPair
+    //   .save()
+    //   .then((res) => console.log("THE KEY-PAIR SAVED", res));
   });
   socket.on("join", ({ name, room_id, user_id }) => {
     const { error, user } = addUser({
@@ -109,9 +127,13 @@ io.on("connection", (socket) => {
     });
   });
   socket.on("get-messages-history", (room_id) => {
-    Message.find({ room_id }).then((result) => {
-      socket.emit("output-messages", result);
-    });
+    Message.find({ room_id })
+      // .sort({ createdAt: -1 })
+      // .limit(10)
+      .then((result) => {
+        // console.log("THE RESULT \n", result);
+        socket.emit("output-messages", result);
+      });
   });
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
