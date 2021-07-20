@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 
 const roomSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  // will store the _id of the users
+  name: { type: mongoose.Schema.Types.String, unique: true },
   user_1: {
     type: String,
     required: true,
@@ -15,5 +11,5 @@ const roomSchema = new mongoose.Schema({
     required: true,
   },
 });
-const Room = mongoose.model("room", roomSchema);
+const Room = mongoose.model("room", roomSchema, "room");
 module.exports = Room;
