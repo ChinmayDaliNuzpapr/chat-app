@@ -36,7 +36,6 @@ const { addUser, getUser, removeUser } = require("./helper");
 const Message = require("./models/Message");
 const PORT = process.env.PORT || 5001;
 const Room = require("./models/Room");
-const KeyPairVal = require("./models/KeyPair");
 // Room.create({name:"135weqwerwqre",user_1:"",user_2:""})
 
 app.get("/set-cookies", (req, res) => {
