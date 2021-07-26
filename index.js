@@ -97,7 +97,7 @@ io.on("connection", (socket) => {
       console.log("join user", user);
     }
   });
-  socket.on("sendMessage", (message, room_id, callback) => {
+  socket.on("sendMessage", (message, room_id, reciever, callback) => {
     /**[send message event]
      * @argument message: the text based message
      * @argument room_id: the room_id
@@ -111,7 +111,7 @@ io.on("connection", (socket) => {
       room_id,
       text: message,
     };
-    console.log("message", msgToStore);
+    console.log("message", msgToStore, "receiver \n", reciever);
     const msg = new Message({ ...msgToStore, read: false });
     msg.save().then((result) => {
       /** [how to send notifications]
@@ -121,7 +121,16 @@ io.on("connection", (socket) => {
             get the socket_id of the reciever
       */
       console.log("⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐");
-      console.log(getUserById(msgToStore.user_id));
+      // console.log();
+      let reciever_user_obj = getUserById(reciever);
+      let notification_obj = {
+        sender: { user_id: msgToStore.user_id, username: msgToStore.name },
+        room_id: msgToStore.room_id,
+        text: msgToStore.text,
+        msgToStore,
+        reciever: reciever_user_obj,
+      };
+      io.to(reciever_user_obj.socket_id).emit("notification", notification_obj);
       console.log("------------------------------------------------");
       io.to(room_id).emit("message", result);
       callback();
