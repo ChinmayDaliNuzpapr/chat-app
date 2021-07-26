@@ -32,7 +32,13 @@ mongoose
   .connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("connected"))
   .catch((err) => console.log(err));
-const { addUser, getUser, removeUser } = require("./helper");
+const {
+  addUser,
+  getUser,
+  removeUser,
+  getUserById,
+  updateUserByRoomId,
+} = require("./helper");
 const Message = require("./models/Message");
 const PORT = process.env.PORT || 5001;
 const Room = require("./models/Room");
@@ -60,17 +66,29 @@ if (process.env.NODE_ENV === "production") {
 io.on("connection", (socket) => {
   console.log("THE SOCKET ID ", socket.id);
   /* as soon as a user connects to the server we add that user in our dynamic memory */
+  socket.on("online", ({ name, user_id }) => {
+    console.log(" name, user_id", name, user_id);
+    // This is will work when user is chatting with another user but not in the same room
+    const { error, user } = addUser({
+      socket_id: socket.id,
+      name,
+      user_id,
+    });
+    // socket.join(room_id);
+    if (error) {
+      // NOTE: SEND A NOTIFICATION that there was a socket error or retry the socket-connection.
+      console.log("join error", error);
+    } else {
+      console.log("join user", user);
+    }
+  });
   socket.on("join", ({ name, room_id, user_id }) => {
     /**[join event] 
      * when a user joins a particular room we update the
         user_obj in our dynamic memory to store the room_id
     */
-    const { error, user } = addUser({
-      socket_id: socket.id,
-      name,
-      room_id,
-      user_id,
-    });
+    console.log("THE JOIN INPUT", name, room_id, user_id);
+    const { error, user } = updateUserByRoomId(user_id, room_id);
     socket.join(room_id);
     if (error) {
       // NOTE: SEND A NOTIFICATION that there was a socket error or retry the socket-connection.
@@ -94,7 +112,7 @@ io.on("connection", (socket) => {
       text: message,
     };
     console.log("message", msgToStore);
-    const msg = new Message(msgToStore);
+    const msg = new Message({ ...msgToStore, read: false });
     msg.save().then((result) => {
       /** [how to send notifications]
        * If the receiver is live and connected to the same room then we send the message
@@ -102,6 +120,9 @@ io.on("connection", (socket) => {
             save the notification [message/sender/reciever/room_id] all string values will be saved
             get the socket_id of the reciever
       */
+      console.log("⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐");
+      console.log(getUserById(msgToStore.user_id));
+      console.log("------------------------------------------------");
       io.to(room_id).emit("message", result);
       callback();
     });
