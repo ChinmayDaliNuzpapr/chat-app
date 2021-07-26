@@ -59,7 +59,12 @@ if (process.env.NODE_ENV === "production") {
 
 io.on("connection", (socket) => {
   console.log("THE SOCKET ID ", socket.id);
+  /* as soon as a user connects to the server we add that user in our dynamic memory */
   socket.on("join", ({ name, room_id, user_id }) => {
+    /**[join event] 
+     * when a user joins a particular room we update the
+        user_obj in our dynamic memory to store the room_id
+    */
     const { error, user } = addUser({
       socket_id: socket.id,
       name,
@@ -71,10 +76,16 @@ io.on("connection", (socket) => {
       // NOTE: SEND A NOTIFICATION that there was a socket error or retry the socket-connection.
       console.log("join error", error);
     } else {
-      // console.log("join user", user);
+      console.log("join user", user);
     }
   });
   socket.on("sendMessage", (message, room_id, callback) => {
+    /**[send message event]
+     * @argument message: the text based message
+     * @argument room_id: the room_id
+     * @argument sender: the sender (user_id & name)
+     * @argument reciever: the reciever (user_id & name)
+     */
     const user = getUser(socket.id);
     const msgToStore = {
       name: user.name,
@@ -88,20 +99,17 @@ io.on("connection", (socket) => {
       /** [how to send notifications]
        * If the receiver is live and connected to the same room then we send the message
        * Else send the notification
-            get the room_id and user_id of the sender receiver 
+            save the notification [message/sender/reciever/room_id] all string values will be saved
+            get the socket_id of the reciever
       */
       io.to(room_id).emit("message", result);
       callback();
     });
   });
   socket.on("get-messages-history", (room_id) => {
-    Message.find({ room_id })
-      // .sort({ createdAt: -1 })
-      // .limit(10)
-      .then((result) => {
-        // console.log("THE RESULT \n", result);
-        socket.emit("output-messages", result);
-      });
+    Message.find({ room_id }).then((result) => {
+      socket.emit("output-messages", result);
+    });
   });
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
