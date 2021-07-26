@@ -57,31 +57,6 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-function randomString(
-  length = 12,
-  chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-) {
-  var result = "";
-  for (var i = length; i > 0; --i)
-    result += chars[Math.floor(Math.random() * chars.length)];
-  return result;
-}
-
-const checkIfRoomExists = async ({ user_1, user_2 }) => {
-  let room_val = await Room.findOne({ user_1: user_1, user_2: user_2 });
-  // console.log("THE ROOM VAL", room_val);
-  if (await Room.findOne({ user_1: user_1, user_2: user_2 })) {
-    console.log("CHECK TO SEE IF THE ROOM ALREADY EXISTS", room_val);
-    return room_val._id;
-  } else if (await Room.findOne({ user_1: user_2, user_2: user_1 })) {
-    console.log("The room has been created by the other user");
-    let room_val = await Room.findOne({ user_1: user_2, user_2: user_1 });
-    return room_val._id;
-  } else {
-    return null;
-  }
-};
-
 io.on("connection", (socket) => {
   console.log("THE SOCKET ID ", socket.id);
   socket.on("create-room", (val) => {
