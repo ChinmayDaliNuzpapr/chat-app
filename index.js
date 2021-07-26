@@ -80,9 +80,10 @@ io.on("connection", (socket) => {
     });
     socket.join(room_id);
     if (error) {
+      // NOTE: SEND A NOTIFICATION that there was a socket error or retry the socket-connection.
       console.log("join error", error);
     } else {
-      console.log("join user", user);
+      // console.log("join user", user);
     }
   });
   socket.on("sendMessage", (message, room_id, callback) => {
@@ -96,6 +97,11 @@ io.on("connection", (socket) => {
     console.log("message", msgToStore);
     const msg = new Message(msgToStore);
     msg.save().then((result) => {
+      /** [how to send notifications]
+       * If the receiver is live and connected to the same room then we send the message
+       * Else send the notification
+            get the room_id and user_id of the sender receiver 
+      */
       io.to(room_id).emit("message", result);
       callback();
     });
