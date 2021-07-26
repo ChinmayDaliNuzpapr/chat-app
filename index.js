@@ -59,18 +59,6 @@ if (process.env.NODE_ENV === "production") {
 
 io.on("connection", (socket) => {
   console.log("THE SOCKET ID ", socket.id);
-  socket.on("create-room", (val) => {
-    console.log("THE CREATE ROOM EMITTER", val);
-    // const server_save_keyPair = new KeyPairVal({
-    //   key_val: {
-    //     publicKeyJwk: val.publicKeyJwk,
-    //     privateKeyJwk: val.privateKeyJwk,
-    //   },
-    // });
-    // server_save_keyPair
-    //   .save()
-    //   .then((res) => console.log("THE KEY-PAIR SAVED", res));
-  });
   socket.on("join", ({ name, room_id, user_id }) => {
     const { error, user } = addUser({
       socket_id: socket.id,
