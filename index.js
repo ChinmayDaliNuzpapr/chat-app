@@ -41,7 +41,7 @@ const {
 } = require("./helper");
 const Message = require("./models/Message");
 const PORT = process.env.PORT || 5001;
-const Room = require("./models/Room");
+const Notification = require("./models/Notification");
 // Room.create({name:"135weqwerwqre",user_1:"",user_2:""})
 
 app.get("/set-cookies", (req, res) => {
@@ -130,14 +130,23 @@ io.on("connection", (socket) => {
         reciever: reciever, //reciever_user_obj.user_id,
         timestamp: Date(),
       };
-      console.log("notify-obj", notification_obj);
+      const notifyObj = new Notification({
+        sender: msgToStore.user_id,
+        room_id: msgToStore.room_id,
+        text: msgToStore.text,
+        reciever: reciever,
+      });
+      notifyObj.save().then((result) => {
+        console.log("SAVE NOTIFICATION", result);
 
-      if (reciever_user_obj) {
-        io.to(reciever_user_obj.socket_id).emit(
-          "notification",
-          notification_obj
-        );
-      }
+        if (reciever_user_obj) {
+          io.to(reciever_user_obj.socket_id).emit(
+            "notification",
+            notification_obj
+          );
+        }
+      });
+      console.log("notify-obj", notification_obj);
 
       io.to(room_id).emit("message", result);
       callback();
