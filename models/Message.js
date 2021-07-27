@@ -1,28 +1,67 @@
 const mongoose = require("mongoose");
 
+// const messageSchema = new mongoose.Schema(
+//   {
+//     name: {
+//       type: String,
+//       required: true,
+//     },
+//     user_id: {
+//       type: String,
+//       required: true,
+//     },
+//     text: {
+//       type: String,
+//       required: true,
+//     },
+//     room_id: {
+//       type: String,
+//       required: true,
+//     },
+//     read: {
+//       type: Boolean,
+//       required: true,
+//     },
+//   },
+//   { timestamps: true }
+// );
 const messageSchema = new mongoose.Schema(
   {
     name: {
       type: String,
+
       required: true,
     },
+
     user_id: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+
+      ref: "users",
+
       required: true,
     },
+
     text: {
       type: String,
+
       required: true,
     },
+
     room_id: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+
+      ref: "room",
+
       required: true,
     },
+
     read: {
       type: Boolean,
+
       required: true,
     },
   },
+
   { timestamps: true }
 );
 const Message = mongoose.model("message", messageSchema);

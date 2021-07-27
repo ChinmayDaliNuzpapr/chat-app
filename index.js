@@ -108,6 +108,7 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("sendMessage", (message, room_id, reciever, callback) => {
+    const ObjectId = mongoose.Types.ObjectId;
     /**[send message event]
      * @argument message: the text based message
      * @argument room_id: the room_id
@@ -118,8 +119,8 @@ io.on("connection", (socket) => {
     console.log("THE USER", user);
     const msgToStore = {
       name: user.name,
-      user_id: user.user_id,
-      room_id,
+      user_id: ObjectId(user.user_id),
+      room_id: ObjectId(room_id),
       text: message,
     };
     console.log("message", msgToStore, "receiver \n", reciever);
