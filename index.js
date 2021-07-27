@@ -80,6 +80,10 @@ io.on("connection", (socket) => {
       console.log("join error", error);
     } else {
       console.log("join user", user);
+      Notification.find({ reciever: user.user_id }).then((result) => {
+        console.log("HISTORY OF NOTIFICATION", result);
+        io.to(user.socket_id).emit("notification_history", result);
+      });
     }
   });
   socket.on("join", ({ name, room_id, user_id }) => {
@@ -95,6 +99,12 @@ io.on("connection", (socket) => {
       console.log("join error", error);
     } else {
       console.log("join user", user);
+      Notification.deleteMany({
+        reciever: user.user_id,
+        room_id: user.room_id,
+      }).then((result) => {
+        console.log("DELETED RESULT OF NOTIFICATION", result);
+      });
     }
   });
   socket.on("sendMessage", (message, room_id, reciever, callback) => {
