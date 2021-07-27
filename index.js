@@ -105,6 +105,7 @@ io.on("connection", (socket) => {
      * @argument reciever: the reciever (user_id & name)
      */
     const user = getUser(socket.id);
+    console.log("THE USER", user);
     const msgToStore = {
       name: user.name,
       user_id: user.user_id,
@@ -120,18 +121,24 @@ io.on("connection", (socket) => {
             save the notification [message/sender/reciever/room_id] all string values will be saved
             get the socket_id of the reciever
       */
-      console.log("⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐");
-      // console.log();
       let reciever_user_obj = getUserById(reciever);
       let notification_obj = {
-        sender: { user_id: msgToStore.user_id, username: msgToStore.name },
+        sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
         room_id: msgToStore.room_id,
         text: msgToStore.text,
-        msgToStore,
-        reciever: reciever_user_obj,
+        // msgToStore,
+        reciever: reciever, //reciever_user_obj.user_id,
+        timestamp: Date(),
       };
-      io.to(reciever_user_obj.socket_id).emit("notification", notification_obj);
-      console.log("------------------------------------------------");
+      console.log("notify-obj", notification_obj);
+
+      if (reciever_user_obj) {
+        io.to(reciever_user_obj.socket_id).emit(
+          "notification",
+          notification_obj
+        );
+      }
+
       io.to(room_id).emit("message", result);
       callback();
     });
