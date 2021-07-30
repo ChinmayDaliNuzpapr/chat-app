@@ -139,7 +139,7 @@ io.on("connection", (socket) => {
         sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
         room_id: msgToStore.room_id,
         text: msgToStore.text,
-        // msgToStore,
+        type: msgToStore.type,
         reciever: reciever, //reciever_user_obj.user_id,
         timestamp: Date(),
       };
