@@ -107,7 +107,7 @@ io.on("connection", (socket) => {
       });
     }
   });
-  socket.on("sendMessage", (message, room_id, reciever, callback) => {
+  socket.on("sendMessage", (message, room_id, reciever, type, callback) => {
     const ObjectId = mongoose.Types.ObjectId;
     /**[send message event]
      * @argument message: the text based message
@@ -117,14 +117,16 @@ io.on("connection", (socket) => {
      */
     const user = getUser(socket.id);
     console.log("THE USER", user);
+    console.log("THE USER", message, room_id, reciever, type);
     const msgToStore = {
       name: user.name,
       user_id: ObjectId(user.user_id),
       room_id: ObjectId(room_id),
       text: message,
+      type: type,
     };
     console.log("message", msgToStore, "receiver \n", reciever);
-    const msg = new Message({ ...msgToStore, read: false });
+    const msg = new Message({ ...msgToStore });
     msg.save().then((result) => {
       /** [how to send notifications]
        * If the receiver is live and connected to the same room then we send the message

@@ -55,10 +55,8 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
 
-    read: {
-      type: Boolean,
-
-      required: true,
+    type: {
+      type: String,
     },
   },
 
