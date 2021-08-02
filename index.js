@@ -63,6 +63,7 @@ const storage = multer.diskStorage({
     const ext = path.extname(file.originalname);
     const id = uuid();
     const filePath = `images/${id}${ext}`;
+    // Storing the file in the database
     Image.create({ filePath: filePath }).then(() => {
       cb(null, filePath);
     });
@@ -71,17 +72,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage }); // or simply { dest: 'uploads/' }
 app.use(express.static("public"));
 app.use(express.static("uploads"));
-app.post("/upload", upload.single("file"), (req, res) => {
-  console.log("req", req);
-  console.log("🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨");
-  console.log(res.json());
-});
-
-app.get("/images", (req, res) => {
-  Image.find().then((images) => {
-    return res.json({ status: "OK", images });
-  });
-});
 
 console.log("IT DOES WORK", process.env.NODE_ENV);
 if (process.env.NODE_ENV === "production") {
@@ -109,7 +99,7 @@ io.on("connection", (socket) => {
     } else {
       console.log("join user", user);
       Notification.find({ reciever: user.user_id }).then((result) => {
-        console.log("HISTORY OF NOTIFICATION", result);
+        // console.log("HISTORY OF NOTIFICATION", result);
         io.to(user.socket_id).emit("notification_history", result);
       });
     }
@@ -131,7 +121,7 @@ io.on("connection", (socket) => {
         reciever: user.user_id,
         room_id: user.room_id,
       }).then((result) => {
-        console.log("DELETED RESULT OF NOTIFICATION", result);
+        // console.log("DELETED RESULT OF NOTIFICATION", result);
       });
     }
   });
@@ -187,7 +177,7 @@ io.on("connection", (socket) => {
           );
         }
       });
-      console.log("notify-obj", notification_obj);
+      // console.log("notify-obj", notification_obj);
 
       io.to(room_id).emit("message", result);
       callback();
@@ -200,6 +190,78 @@ io.on("connection", (socket) => {
   });
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
+  });
+});
+/**[POST api]
+ * body will include {
+ *  user:{
+ *    name:<user-name>,
+ *    user_id:<user-id>
+ * },
+ *  room_id,text,
+ * file,
+ * receiver_user_id
+ * }
+ */
+app.post("/upload", upload.single("file"), (req, res) => {
+  console.log("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+  console.log("req", req.file);
+  const { user_name, user_id, room_id, message, type, receiver_user_id } =
+    req.body;
+  let reciever = receiver_user_id;
+  console.log("ALL THE VALUES", req.body);
+  // Once we get a value from our callback we can then save the data in the message
+  const ObjectId = mongoose.Types.ObjectId;
+  const msgToStore = {
+    name: user_name,
+    user_id: ObjectId(user_id),
+    room_id: ObjectId(room_id),
+    text: message,
+    filePath: req.file.filename,
+    type: type,
+  };
+  console.log("message", msgToStore, "\n receiver ", reciever);
+  const msg = new Message({ ...msgToStore });
+  msg.save().then((result) => {
+    //
+    console.log("THE msg", msg);
+    console.log("THE result", result);
+    console.log("THE RECEIVER", reciever);
+    let reciever_user_obj = getUserById(reciever);
+    let notification_obj = {
+      sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
+      room_id: msgToStore.room_id,
+      text: msgToStore.text,
+      type: msgToStore.type,
+      reciever: reciever, //reciever_user_obj.user_id,
+      timestamp: Date(),
+    };
+    const notifyObj = new Notification({
+      sender: msgToStore.user_id,
+      room_id: msgToStore.room_id,
+      text: msgToStore.text,
+      reciever: reciever,
+    });
+    notifyObj.save().then((result) => {
+      console.log("SAVE NOTIFICATION", result);
+
+      if (reciever_user_obj) {
+        io.to(reciever_user_obj.socket_id).emit(
+          "notification",
+          notification_obj
+        );
+      }
+    });
+    console.log("notify-obj", notification_obj);
+    // Send image back
+    io.to(room_id).emit("message", result);
+  });
+  res.json({ status: 200, data: msgToStore });
+});
+
+app.get("/images", (req, res) => {
+  Image.find().then((images) => {
+    return res.json({ status: "OK", images });
   });
 });
 

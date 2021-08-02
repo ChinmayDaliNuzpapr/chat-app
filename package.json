@@ -19,6 +19,7 @@
     "aws-sdk": "^2.958.0",
     "bcrypt": "^5.0.0",
     "brcypt": "^1.0.1",
+    "cloudinary": "^1.26.3",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
