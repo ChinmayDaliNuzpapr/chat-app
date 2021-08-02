@@ -4,6 +4,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const path = require("path");
+const multer = require("multer");
+const uuid = require("uuid").v4;
+const Image = require("./models/Images");
 dotenv.config();
 var corsOptions = {
   origin: "*",
@@ -20,16 +23,14 @@ const http = require("http").createServer(app);
 const mongoose = require("mongoose");
 const socketio = require("socket.io");
 const io = socketio(http);
-// const path = require('path');
 const mongoDB =
   "mongodb+srv://bhupesh:bhupesh@cluster0.axtn8.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-/* BELOW IS THE LOCAL PSEUDO chat-db URL */
-// "mongodb+srv://bhupesh:bhupesh@cluster0.axtn8.mongodb.net/myChatDb?retryWrites=true&w=majority";
-/* BELOW IS THE LOCAL URL */
-// const mongoDB = 'mongodb://localhost:27017/boilerplate'
-
 mongoose
-  .connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(mongoDB, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+  })
   .then(() => console.log("connected"))
   .catch((err) => console.log(err));
 const {
@@ -42,7 +43,6 @@ const {
 const Message = require("./models/Message");
 const PORT = process.env.PORT || 5001;
 const Notification = require("./models/Notification");
-// Room.create({name:"135weqwerwqre",user_1:"",user_2:""})
 
 app.get("/set-cookies", (req, res) => {
   res.cookie("username", "Tony");
@@ -53,6 +53,34 @@ app.get("/get-cookies", (req, res) => {
   const cookies = req.cookies;
   console.log(cookies);
   res.json(cookies);
+});
+// Create an API for to upload files in message schema
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads");
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const id = uuid();
+    const filePath = `images/${id}${ext}`;
+    Image.create({ filePath: filePath }).then(() => {
+      cb(null, filePath);
+    });
+  },
+});
+const upload = multer({ storage }); // or simply { dest: 'uploads/' }
+app.use(express.static("public"));
+app.use(express.static("uploads"));
+app.post("/upload", upload.single("file"), (req, res) => {
+  console.log("req", req);
+  console.log("🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨");
+  console.log(res.json());
+});
+
+app.get("/images", (req, res) => {
+  Image.find().then((images) => {
+    return res.json({ status: "OK", images });
+  });
 });
 
 console.log("IT DOES WORK", process.env.NODE_ENV);
