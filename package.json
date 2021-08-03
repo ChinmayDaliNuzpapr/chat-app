@@ -28,8 +28,10 @@
     "mongoose": "^5.11.13",
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "rxjs": "^6.6.7",
     "socket.io": "^2.3.0",
+    "streamifier": "^0.1.1",
     "uuid": "^8.3.2",
     "validator": "^13.5.2"
   }

@@ -7,6 +7,14 @@ const path = require("path");
 const multer = require("multer");
 const uuid = require("uuid").v4;
 const Image = require("./models/Images");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const streamifier = require("streamifier");
+cloudinary.config({
+  cloud_name: "nuzpapr-technolabs",
+  api_key: "126467856159596",
+  api_secret: "AL0rn6wraO5W_wMyJMu2C1toNHM",
+});
 dotenv.config();
 var corsOptions = {
   origin: "*",
@@ -203,6 +211,7 @@ io.on("connection", (socket) => {
  * receiver_user_id
  * }
  */
+// METHOD-1 [WORKS]
 app.post("/upload", upload.single("file"), (req, res) => {
   console.log("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
   console.log("req", req.file);
@@ -258,7 +267,54 @@ app.post("/upload", upload.single("file"), (req, res) => {
   });
   res.json({ status: 200, data: msgToStore });
 });
+/* Cloudinary Approach */
+const storage2 = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "uploadFolder",
+    allowedFormats: ["jpg", "png"],
+    format: async (req, file) => "png", // supports promises as well
+    public_id: (req, file) => {
+      // "computed-filename-using-request"
+      console.log("THE FILE", file);
+      return file;
+    },
+  },
+});
+const parser = multer({ storage: storage2 });
 
+app.post("/upload2", parser.single("image"), function (req, res, next) {
+  console.log("🟠🟠🟠🟠🟠🟠🟠🟠🟠🟠🟠🟠🟠🟠", req.file);
+  const image = {};
+  image.url = req.file.url;
+  image.id = req.file.public_id;
+  console.log(image);
+  res.json(req.file);
+});
+// MEthod-3
+const fileUpload = multer({ storage: storage });
+app.post("/upload3", fileUpload.single("image"), function (req, res, next) {
+  let streamUpload = (req) => {
+    return new Promise((resolve, reject) => {
+      let stream = cloudinary.uploader.upload_stream((error, result) => {
+        if (result) {
+          resolve(result);
+        } else {
+          reject(error);
+        }
+      });
+
+      streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+  };
+
+  async function upload(req) {
+    let result = await streamUpload(req);
+    console.log(result);
+  }
+
+  upload(req);
+});
 app.get("/images", (req, res) => {
   Image.find().then((images) => {
     return res.json({ status: "OK", images });
