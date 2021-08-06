@@ -178,7 +178,7 @@ io.on("connection", (socket) => {
       notifyObj.save().then((result) => {
         console.log("SAVE NOTIFICATION", result);
 
-        if (reciever_user_obj) {
+        if (reciever_user_obj && room_id !== reciever_user_obj.room_id) {
           io.to(reciever_user_obj.socket_id).emit(
             "notification",
             notification_obj
@@ -199,6 +199,71 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
   });
+  app.post("/upload", upload.single("file"), (req, res) => {
+    console.log("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪", req.body);
+    console.log("req", req.file);
+    const { user_name, user_id, room_id, message, type, receiver_user_id } =
+      req.body;
+    let reciever = receiver_user_id;
+    console.log("ALL THE VALUES", req.body);
+    // Once we get a value from our callback we can then save the data in the message
+    const ObjectId = mongoose.Types.ObjectId;
+    const msgToStore = {
+      name: user_name,
+      user_id: ObjectId(user_id),
+      room_id: ObjectId(room_id),
+      text: message,
+      filePath: req.file.filename,
+      type: type,
+    };
+    console.log("message", msgToStore, "\n receiver ", reciever);
+    const msg = new Message({ ...msgToStore });
+    msg.save().then((result) => {
+      //
+      console.log("THE msg", msg);
+      console.log("THE result", result);
+      console.log("THE RECEIVER", reciever);
+      let reciever_user_obj = getUserById(reciever);
+      let notification_obj = {
+        sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
+        room_id: msgToStore.room_id,
+        text: msgToStore.text,
+        type: msgToStore.type,
+        reciever: reciever, //reciever_user_obj.user_id,
+        timestamp: Date(),
+      };
+      const notifyObj = new Notification({
+        sender: msgToStore.user_id,
+        room_id: msgToStore.room_id,
+        text: msgToStore.text,
+        reciever: reciever,
+      });
+      notifyObj.save().then((result) => {
+        console.log("SAVE NOTIFICATION", result);
+        // io.to(room_id).emit("message", result);
+        if (reciever_user_obj && room_id !== reciever_user_obj.room_id) {
+          // io.to(reciever_user_obj.socket_id).emit(
+          //   "notification",
+          //   notification_obj
+          // );
+        }
+        console.log("THE SOCKETIO response", io.sockets);
+        res.status(200).send(result);
+
+        console.log("THE SOCKETIO ROOMs", socket.id);
+        let sender_user_obj = getUserById(user_id);
+        console.log("THE SENDER's ROOM", sender_user_obj);
+        io.sockets.in(sender_user_obj.socket_id).emit("message", result);
+        // socket.to(room_id).emit("message", result);
+      });
+      console.log("notify-obj", notification_obj);
+      // Send image back
+
+      // res.status(200).send(result);
+      // socket.to(room_id).emit("message", result);
+      // callback();
+    });
+  });
 });
 /**[POST api]
  * body will include {
@@ -212,61 +277,7 @@ io.on("connection", (socket) => {
  * }
  */
 // METHOD-1 [WORKS]
-app.post("/upload", upload.single("file"), (req, res) => {
-  console.log("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-  console.log("req", req.file);
-  const { user_name, user_id, room_id, message, type, receiver_user_id } =
-    req.body;
-  let reciever = receiver_user_id;
-  console.log("ALL THE VALUES", req.body);
-  // Once we get a value from our callback we can then save the data in the message
-  const ObjectId = mongoose.Types.ObjectId;
-  const msgToStore = {
-    name: user_name,
-    user_id: ObjectId(user_id),
-    room_id: ObjectId(room_id),
-    text: message,
-    filePath: req.file.filename,
-    type: type,
-  };
-  console.log("message", msgToStore, "\n receiver ", reciever);
-  const msg = new Message({ ...msgToStore });
-  msg.save().then((result) => {
-    //
-    console.log("THE msg", msg);
-    console.log("THE result", result);
-    console.log("THE RECEIVER", reciever);
-    let reciever_user_obj = getUserById(reciever);
-    let notification_obj = {
-      sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
-      room_id: msgToStore.room_id,
-      text: msgToStore.text,
-      type: msgToStore.type,
-      reciever: reciever, //reciever_user_obj.user_id,
-      timestamp: Date(),
-    };
-    const notifyObj = new Notification({
-      sender: msgToStore.user_id,
-      room_id: msgToStore.room_id,
-      text: msgToStore.text,
-      reciever: reciever,
-    });
-    notifyObj.save().then((result) => {
-      console.log("SAVE NOTIFICATION", result);
 
-      if (reciever_user_obj) {
-        io.to(reciever_user_obj.socket_id).emit(
-          "notification",
-          notification_obj
-        );
-      }
-    });
-    console.log("notify-obj", notification_obj);
-    // Send image back
-    io.to(room_id).emit("message", result);
-  });
-  res.json({ status: 200, data: msgToStore });
-});
 /* Cloudinary Approach */
 const storage2 = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -292,7 +303,8 @@ app.post("/upload2", parser.single("image"), function (req, res, next) {
   res.json(req.file);
 });
 // MEthod-3
-const fileUpload = multer({ storage: storage });
+// const fileUpload = multer({ storage: storage });
+const fileUpload = multer();
 app.post("/upload3", fileUpload.single("image"), function (req, res, next) {
   let streamUpload = (req) => {
     return new Promise((resolve, reject) => {
@@ -308,13 +320,34 @@ app.post("/upload3", fileUpload.single("image"), function (req, res, next) {
     });
   };
 
-  async function upload(req) {
-    let result = await streamUpload(req);
-    console.log(result);
-  }
+  // async function upload(req) {
+  //   let result = await streamUpload(req);
+  //   console.log(result);
+  //   res.status(200).send(result);
+  // }
 
-  upload(req);
+  // upload(req);
+  streamUpload(req)
+    .then((result) => {
+      console.log(result);
+      res.status(200).send(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(400).send(err);
+    });
 });
+// app.post("/api/upload", async (req, res) => {
+//   try {
+//     const fileStr = req.body.data;
+//     const uploadResponse = await cloudinary.uploader.upload(fileStr, {});
+//     console.log(uploadResponse);
+//     res.json({ msg: "yaya" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ err: "Something went wrong" });
+//   }
+// });
 app.get("/images", (req, res) => {
   Image.find().then((images) => {
     return res.json({ status: "OK", images });

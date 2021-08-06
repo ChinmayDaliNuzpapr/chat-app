@@ -31,7 +31,7 @@ const updateUserByRoomId = (user_id, room_id) => {
     (user) => user.room_id === room_id && user.user_id === user_id
   );
   // updating the user by its room_id ie the user_obj will also contain room_id along with name/user_id/socket_id
-  console.log("list users", users);
+  console.log("⭐⭐⭐⭐⭐⭐⭐ list users", users);
   console.log("user that will be returned", user);
   return { user };
 };
