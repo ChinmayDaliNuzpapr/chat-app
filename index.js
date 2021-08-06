@@ -193,6 +193,7 @@ io.on("connection", (socket) => {
   });
   socket.on("get-messages-history", (room_id) => {
     Message.find({ room_id }).then((result) => {
+      // console.log("THE MESSAGES", result);
       socket.emit("output-messages", result);
     });
   });
@@ -242,26 +243,23 @@ io.on("connection", (socket) => {
         console.log("SAVE NOTIFICATION", result);
         // io.to(room_id).emit("message", result);
         if (reciever_user_obj && room_id !== reciever_user_obj.room_id) {
-          // io.to(reciever_user_obj.socket_id).emit(
-          //   "notification",
-          //   notification_obj
-          // );
+          io.to(reciever_user_obj.socket_id).emit(
+            "notification",
+            notification_obj
+          );
         }
         console.log("THE SOCKETIO response", io.sockets);
         res.status(200).send(result);
 
-        console.log("THE SOCKETIO ROOMs", socket.id);
-        let sender_user_obj = getUserById(user_id);
-        console.log("THE SENDER's ROOM", sender_user_obj);
-        io.sockets.in(sender_user_obj.socket_id).emit("message", result);
         // socket.to(room_id).emit("message", result);
       });
       console.log("notify-obj", notification_obj);
       // Send image back
 
-      // res.status(200).send(result);
-      // socket.to(room_id).emit("message", result);
-      // callback();
+      console.log("THE SOCKETIO ROOMs", socket.id);
+      let sender_user_obj = getUserById(user_id);
+      console.log("THE SENDER's ROOM", sender_user_obj);
+      io.sockets.in(sender_user_obj.socket_id).emit("message", result);
     });
   });
 });
