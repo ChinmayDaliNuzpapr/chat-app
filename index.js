@@ -200,67 +200,87 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
   });
-  app.post("/upload", upload.single("file"), (req, res) => {
+  const fileUpload = multer();
+  app.post("/upload", fileUpload.single("file"), (req, res) => {
     console.log("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪", req.body);
     console.log("req", req.file);
     const { user_name, user_id, room_id, message, type, receiver_user_id } =
       req.body;
     let reciever = receiver_user_id;
     console.log("ALL THE VALUES", req.body);
-    // Once we get a value from our callback we can then save the data in the message
-    const ObjectId = mongoose.Types.ObjectId;
-    const msgToStore = {
-      name: user_name,
-      user_id: ObjectId(user_id),
-      room_id: ObjectId(room_id),
-      text: message,
-      filePath: req.file.filename,
-      type: type,
+    let streamUpload = (req) => {
+      return new Promise((resolve, reject) => {
+        let stream = cloudinary.uploader.upload_stream((error, result) => {
+          if (result) {
+            resolve(result);
+          } else {
+            reject(error);
+          }
+        });
+
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
     };
-    console.log("message", msgToStore, "\n receiver ", reciever);
-    const msg = new Message({ ...msgToStore });
-    msg.save().then((result) => {
-      //
-      console.log("THE msg", msg);
-      console.log("THE result", result);
-      console.log("THE RECEIVER", reciever);
-      let reciever_user_obj = getUserById(reciever);
-      let notification_obj = {
-        sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
-        room_id: msgToStore.room_id,
-        text: msgToStore.text,
-        type: msgToStore.type,
-        reciever: reciever, //reciever_user_obj.user_id,
-        timestamp: Date(),
-      };
-      const notifyObj = new Notification({
-        sender: msgToStore.user_id,
-        room_id: msgToStore.room_id,
-        text: msgToStore.text,
-        reciever: reciever,
-      });
-      notifyObj.save().then((result) => {
-        console.log("SAVE NOTIFICATION", result);
-        // io.to(room_id).emit("message", result);
-        if (reciever_user_obj && room_id !== reciever_user_obj.room_id) {
-          io.to(reciever_user_obj.socket_id).emit(
-            "notification",
-            notification_obj
-          );
-        }
-        console.log("THE SOCKETIO response", io.sockets);
+    streamUpload(req)
+      .then((result) => {
+        console.log(result);
+
+        const ObjectId = mongoose.Types.ObjectId;
+        const msgToStore = {
+          name: user_name, //sender username
+          user_id: ObjectId(user_id), //sender user_id
+          room_id: ObjectId(room_id),
+          text: message,
+          filePath: result.url,
+          type: type, // image or PDF
+        };
+        console.log("message", msgToStore, "\n receiver ", reciever);
+        const msg = new Message({ ...msgToStore });
+        /**Save the value in DB */
+        msg.save().then((result) => {
+          //
+          console.log("THE msg", msg);
+          console.log("THE result", result);
+          console.log("THE RECEIVER", reciever);
+          let reciever_user_obj = getUserById(reciever);
+          let notification_obj = {
+            sender: msgToStore.user_id, //{ user_id: msgToStore.user_id, username: msgToStore.name },
+            room_id: msgToStore.room_id,
+            text: msgToStore.text,
+            type: msgToStore.type,
+            reciever: reciever, //reciever_user_obj.user_id,
+            timestamp: Date(),
+          };
+          const notifyObj = new Notification({
+            sender: msgToStore.user_id,
+            room_id: msgToStore.room_id,
+            text: msgToStore.text,
+            reciever: reciever,
+          });
+          // Sending Notification
+          notifyObj.save().then((result) => {
+            console.log("SAVE NOTIFICATION", result);
+            if (reciever_user_obj && room_id !== reciever_user_obj.room_id) {
+              io.to(reciever_user_obj.socket_id).emit(
+                "notification",
+                notification_obj
+              );
+            }
+            console.log("THE SOCKETIO response", io.sockets);
+          });
+          console.log("notify-obj", notification_obj);
+          /* Broadcast file via socket */
+          console.log("THE SOCKETIO ROOMs", socket.id);
+          let sender_user_obj = getUserById(user_id);
+          console.log("THE SENDER's ROOM", sender_user_obj);
+          io.sockets.in(sender_user_obj.socket_id).emit("message", result);
+        });
         res.status(200).send(result);
-
-        // socket.to(room_id).emit("message", result);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(400).send(err);
       });
-      console.log("notify-obj", notification_obj);
-      // Send image back
-
-      console.log("THE SOCKETIO ROOMs", socket.id);
-      let sender_user_obj = getUserById(user_id);
-      console.log("THE SENDER's ROOM", sender_user_obj);
-      io.sockets.in(sender_user_obj.socket_id).emit("message", result);
-    });
   });
 });
 /**[POST api]
