@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 // const
+function isMyFieldRequired() {
+  return typeof this.myField === "string" ? false : true;
+}
 /**
  * message_obj ===> sender+room_id+text+read
  * receiver-user-object
@@ -17,7 +20,7 @@ const NotificationSchema = new mongoose.Schema(
     },
     text: {
       type: String,
-      required: true,
+      // required: isMyFieldRequired,
     },
     reciever: {
       type: String,
